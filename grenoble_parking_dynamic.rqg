@@ -1,0 +1,25 @@
+PREFIX iter: <http://w3id.org/sparql-generate/iter/>
+PREFIX fn: <http://w3id.org/sparql-generate/fn/>
+PREFIX pk: <http://opensensingcity.emse.fr/ontologies/parking/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX sosa: <http://www.w3.org/ns/sosa/>
+PREFIX time: <http://www.w3.org/2006/time#>
+GENERATE { 
+  ?parkingIRI a pk:ParkingFacility;
+    sosa:observation [ a sosa:Observation;
+      time:inTimePosition [
+        time:numericPosition ?time;
+      ];
+      pk:nbAvailableParkingSpaces ?avParkingSpaces;
+    ];
+}
+SOURCE <http://data.metromobilite.fr/api/dyn/PAR/json> AS ?source
+ITERATOR iter:JSONListKeys(?source) AS ?key
+ITERATOR iter:JSONPath(?source,CONCAT("$.",?key)) as ?elements
+ITERATOR iter:JSONPath(?elements,"$.*") as ?element 
+WHERE {
+    BIND( IRI(CONCAT("http://opensensingcity.emse.fr/grenoble/parkings/",?key)) AS ?parkingIRI )
+    BIND(fn:JSONPath(?element,'$.time') AS ?time )
+    BIND(fn:JSONPath(?element,'$.dispo') AS ?parkingSpaces )
+    BIND(if(?parkingSpaces = -1,0,?parkingSpaces) as ?avParkingSpaces )
+}

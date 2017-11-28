@@ -1,0 +1,19 @@
+BASE <http://example.com/> 
+PREFIX iter: <http://w3id.org/sparql-generate/iter/>
+PREFIX fn: <http://w3id.org/sparql-generate/fn/>
+PREFIX pk: <http://opensensingcity.emse.fr/ontologies/parking/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX sosa: <http://www.w3.org/ns/sosa/>
+PREFIX time: <http://www.w3.org/2006/time#>
+GENERATE { 
+  ?parkingIRI a pk:ParkingFacility;
+   rdfs:label ?name;
+   pk:nbParkingSpaces ?nbParkingSpaces;
+}
+SOURCE <http://data.metromobilite.fr/api/bbox/json?types=PAR> AS ?source
+ITERATOR iter:JSONPath(?source,"$.features.*") AS ?parkings
+WHERE {
+    BIND( IRI(CONCAT("http://opensensingcity.emse.fr/grenoble/parkings/",fn:JSONPath(?parkings,"$.properties.CODE"))) AS ?parkingIRI )
+     BIND( fn:JSONPath(?parkings,"$.properties.LIBELLE") AS ?name )
+    BIND( fn:JSONPath(?parkings,"$.properties.TOTAL") AS ?nbParkingSpaces )
+}
