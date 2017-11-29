@@ -1,0 +1,43 @@
+#lift to the RDF the source which provides a set of data portals and details about them
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+PREFIX fn: <http://w3id.org/sparql-generate/fn/>
+PREFIX iter: <http://w3id.org/sparql-generate/iter/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX dcat: <http://www.w3.org/ns/dcat#>
+PREFIX dp:<http://opensensingcity.emse.fr/ontologies/dataportal/>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+GENERATE { 
+  ?portalIRI a dcat:Catalog;
+    rdfs:label ?portalNameES;
+    rdfs:label ?portalNameEN;
+    rdfs:label ?portalNameFR;
+    dbo:country ?countryIRI;
+    dcat:description ?description;
+    .
+  
+   ?countryIRI rdfs:label ?countryNameFR;
+    rdfs:label ?countryNameEN;
+    rdfs:label ?countryNameES;
+    geo:lat ?lat;
+    geo:long ?long;
+    .
+}
+SOURCE <https://data.opendatasoft.com/explore/dataset/open-data-sources@public/download/?format=geojson&timezone=Europe/Berlin> AS ?source
+ITERATOR iter:JSONPath(?source,"$.features.*") AS ?dataportals
+WHERE {
+  BIND (fn:JSONPath(?dataportals,"$.properties.url") as ?portalURL)
+  BIND ( xsd:string( if(strends(?portalURL,'/'),substr(?portalURL,0,strlen(?portalURL)),?portalURL) ) as ?newPortalURL)
+  BIND( IRI(?newPortalURL) AS ?portalIRI )
+  BIND( fn:JSONPath(?dataportals,"$.properties.country_slug") AS ?countrySlug)
+  BIND (IRI(CONCAT("http://opensensingcity.emse.fr/countries/",?countrySlug)) AS ?countryIRI)
+  BIND(fn:JSONPath(?dataportals,"$.properties.description") AS ?description)
+  BIND(STRLANG(fn:JSONPath(?dataportals,"$.properties.pays"),"fr") AS ?countryNameFR)
+   BIND(STRLANG(fn:JSONPath(?dataportals,"$.properties.country"),"en") AS ?countryNameEN)
+  BIND(STRLANG(fn:JSONPath(?dataportals,"$.properties.pais"),"es") AS ?countryNameES)
+   BIND(STRLANG(fn:JSONPath(?dataportals,"$.properties.code_es"),"es") AS ?portalNameES)
+  BIND(STRLANG(fn:JSONPath(?dataportals,"$.properties.code_en"),"en") AS ?portalNameEN)
+  BIND(STRLANG(fn:JSONPath(?dataportals,"$.properties.code_fr"),"fr") AS ?portalNameFR)
+  BIND( fn:JSONPath(?dataportals,"$.geometry.coordinates[0]") AS ?long )
+  BIND( fn:JSONPath(?dataportals,"$.geometry.coordinates[1]") AS ?lat )
+}
